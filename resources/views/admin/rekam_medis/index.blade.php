@@ -44,6 +44,11 @@
                     Edit
                 </a>
 
+                <a href="{{ route('admin.rekam_medis.show', $rm->id) }}"
+       class="bg-blue-500 px-3 py-1 rounded text-white">
+        Detail
+    </a>
+
                 <form method="POST"
                       action="{{ route('admin.rekam_medis.destroy', $rm) }}">
                     @csrf

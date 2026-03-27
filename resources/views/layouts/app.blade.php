@@ -40,9 +40,14 @@
             Kelola Rekam Medis
         </a>
 
-        <a href="#"
+        <a href="{{route('admin.obat.index')}}"
            class="block px-4 py-2 rounded hover:bg-green-500">
             Kelola Obat
+        </a>
+
+        <a href="{{ route('admin.pembayaran.index') }}"
+            class="block px-4 py-2 rounded hover:bg-green-500">
+            Pembayaran
         </a>
 
     @elseif(auth()->user()->role === 'dokter')
@@ -51,12 +56,12 @@
             Dashboard Dokter
         </a>
 
-        <a href="#"
+        <a href="{{route ('dokter.pemeriksaan.index')}}"
            class="block px-4 py-2 rounded hover:bg-green-500">
             Pemeriksaan Pasien
         </a>
 
-        <a href="#"
+        <a href="{{route ('dokter.pemeriksaan.riwayat')}}"
            class="block px-4 py-2 rounded hover:bg-green-500">
             Rekam Medis
         </a>
@@ -67,12 +72,12 @@
             Dashboard Pasien
         </a>
 
-        <a href="#"
+        <a href="{{route ('pasien.reservasi.create')}}"
            class="block px-4 py-2 rounded hover:bg-green-500">
             Buat Reservasi
         </a>
 
-        <a href="#"
+        <a href="{{route ('pasien.riwayat')}}"
            class="block px-4 py-2 rounded hover:bg-green-500">
             Riwayat Berobat
         </a>

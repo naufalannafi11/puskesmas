@@ -98,4 +98,12 @@ class RekamMedisController extends Controller
 
         return back()->with('success', 'Rekam medis dihapus');
     }
+
+    public function show($id)
+{
+    $rekamMedi = RekamMedis::with(['pasien','dokter'])
+        ->findOrFail($id);
+
+    return view('admin.rekam_medis.show', compact('rekamMedi'));
+}
 }

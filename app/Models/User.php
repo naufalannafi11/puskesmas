@@ -22,7 +22,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'no_rm'
+        'no_rm',
+        'poli',
     ];
 
     /**
@@ -51,5 +52,10 @@ class User extends Authenticatable
     public function rekamMedis()
     {
         return $this->hasMany(RekamMedis::class, 'pasien_id');
+    }
+
+    public function reservasi()
+    {
+        return $this->hasMany(Reservasi::class, 'pasien_id');
     }
 }

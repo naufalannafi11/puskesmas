@@ -15,6 +15,7 @@
         <tr>
             <th class="p-3 text-left">Nama</th>
             <th class="p-3 text-left">Email</th>
+            <th class="p-3 text-left">Poli</th>
             <th class="p-3 ">Aksi</th>
         </tr>
     </thead>
@@ -23,6 +24,7 @@
         <tr class="border-t">
             <td class="p-3">{{ $dokter->name }}</td>
             <td class="p-3">{{ $dokter->email }}</td>
+            <td class="p-3">{{ $dokter->poli ?? '-' }}</td>
             <td class="p-3 flex gap-2 justify-center">
                 <a href="{{ route('admin.dokter.edit', $dokter) }}"
                    class="bg-yellow-400 px-3 py-1 rounded text-white">

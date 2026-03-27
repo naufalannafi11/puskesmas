@@ -22,13 +22,15 @@ class DokterController extends Controller
         $request->validate([
             'name'=>'required',
             'email'=>'required|email|unique:users',
-            'password'=>'required|min:6'
+            'password'=>'required|min:6',
+            'poli' => 'required'
         ]);
         User::create([
             'name'=>$request->name,
             'email'=>$request->email,
             'password'=>Hash::make($request->password),
-            'role'=>'dokter'
+            'role'=>'dokter',
+            'poli'=> $request->poli,
         ]);
         return redirect()->route ('admin.dokter.index')
         ->with('success', 'Dokter Berhasil Ditambahkan');

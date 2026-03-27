@@ -5,7 +5,7 @@
 <h2 class="text-xl font-bold mb-4">Edit Rekam Medis</h2>
 
 <form method="POST"
-      action="{{ route('admin.rekam-medis.update', $rekamMedi) }}"
+      action="{{ route('admin.rekam_medis.update', $rekamMedi) }}"
       class="bg-white p-6 rounded shadow space-y-4">
 
     @csrf

@@ -1,11 +1,19 @@
 <?php
 
+use App\Models\User;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\PasienController;
 use App\Http\Controllers\Admin\RekamMedisController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ObatController;
+use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Pasien\ReservasiController;
+use App\Http\Controllers\Pasien\PasienDashboardController;
+use App\Http\Controllers\Dokter\PemeriksaanController;
+use App\Http\Controllers\Pasien\RiwayatController;
+use App\Models\Obat;
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,8 +56,64 @@ Route::middleware(['auth','role:admin'])
         Route::resource('/dokter', DokterController::class);
         Route::resource('/pasien', PasienController::class);
         Route::resource('/rekam_medis', RekamMedisController::class);
+        Route::resource('/obat', ObatController::class);
+        Route::get('/pembayaran', [PembayaranController::class, 'index'])
+            ->name('pembayaran.index');
+
+        Route::post('/pembayaran/{id}/bayar', [PembayaranController::class, 'bayar'])
+            ->name('pembayaran.bayar');
+
+        Route::get('/pembayaran/{id}', [PembayaranController::class, 'show'])
+            ->name('pembayaran.show');
 
 });
+
+Route::middleware(['auth', 'role:pasien'])
+    ->prefix('pasien')
+    ->name('pasien.')
+    ->group(function(){
+        Route::get('/', [PasienDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::resource('/reservasi', ReservasiController::class)
+            ->only(['index','create','store']);
+
+        Route::get('/rekam-medis', [RiwayatController::class, 'index'])
+            ->name('riwayat');
+        
+            Route::get('/rekam-medis/{id}', [RiwayatController::class, 'show'])
+            ->name('riwayat.show');
+
+    });
+
+Route::middleware(['auth', 'role:dokter'])
+    ->prefix('dokter')
+    ->name('dokter.')
+    ->group(function(){
+
+        Route::get('/pemeriksaan',[PemeriksaanController::class, 'index'])
+        ->name('pemeriksaan.index');
+        Route::get('/pemeriksaan/{reservasi}/create', [PemeriksaanController::class, 'create'])
+        ->name('pemeriksaan.create');
+
+        Route::post('/pemeriksaan/{reservasi}', [PemeriksaanController::class,'store'])
+        ->name('pemeriksaan.store');
+
+        Route::get('/pemeriksaan/riwayat', 
+    [PemeriksaanController::class, 'riwayat']
+)->name('pemeriksaan.riwayat');
+
+Route::get('/pemeriksaan/{id}', 
+[PemeriksaanController::class, 'show']
+)->name('pemeriksaan.show');
+    });
+
+Route::get('/get-dokter-by-poli/{poli}', function ($poli) {
+    return User::where('role', 'dokter')
+        ->where('poli', $poli)
+        ->get(['id', 'name']);
+});
+
 
 
 

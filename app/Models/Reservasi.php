@@ -5,25 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User;
-use App\Models\Reservasi;
+use App\Models\RekamMedis;
 
-class RekamMedis extends Model
+class Reservasi extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'reservasi_id',   // TAMBAHKAN INI
         'pasien_id',
         'dokter_id',
         'tanggal',
-        'anamnesis',
-        'pemeriksaan',
-        'diagnosis',
-        'kode_icd',
-        'tindakan',
-        'pengobatan',
-        'rujukan',
-        'rencana_tindak_lanjut'
+        'keluhan',
+        'nomor_antrian',
+        'status'
     ];
 
     public function pasien()
@@ -36,8 +30,8 @@ class RekamMedis extends Model
         return $this->belongsTo(User::class, 'dokter_id');
     }
 
-    public function reservasi()
+    public function rekamMedis()
     {
-        return $this->belongsTo(Reservasi::class);
+        return $this->hasOne(RekamMedis::class);
     }
 }
