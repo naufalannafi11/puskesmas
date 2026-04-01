@@ -6,8 +6,8 @@
     Dashboard Admin
 </h1>
 
-{{-- ================= STATISTIK ================= --}}
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+{{-- ================= STATISTIK + AI ================= --}}
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
 
     <div class="bg-white p-4 rounded shadow">
         <p class="text-gray-500">Dokter</p>
@@ -37,6 +37,14 @@
         </h2>
     </div>
 
+    {{-- 🔥 AI PREDIKSI --}}
+    <div class="bg-blue-500 text-white p-4 rounded shadow">
+        <p class="text-sm">Prediksi Hari Ini</p>
+        <h2 class="text-3xl font-bold">
+            {{ $prediksi ?? 0 }} orang
+        </h2>
+    </div>
+
 </div>
 
 
@@ -53,14 +61,12 @@
         <ul class="space-y-2">
 
             @foreach ($latestPasien ?? [] as $p)
-
                 <li class="border-b pb-1">
                     {{ $p->name }}
                     <span class="text-gray-500">
                         ({{ $p->no_rm }})
                     </span>
                 </li>
-
             @endforeach
 
         </ul>
@@ -78,11 +84,9 @@
         <ul class="space-y-2">
 
             @foreach ($latestRekamMedis ?? [] as $rm)
-
                 <li class="border-b pb-1">
                     {{ $rm->pasien->name }} – {{ $rm->tanggal }}
                 </li>
-
             @endforeach
 
         </ul>
@@ -110,7 +114,7 @@
             <table class="min-w-full border rounded">
 
                 <thead>
-                    <tr class="bg-gray-100">
+                    <tr class="bg-gray-100 text-sm">
                         <th class="px-4 py-2 border">No</th>
                         <th class="px-4 py-2 border">Pasien</th>
                         <th class="px-4 py-2 border">Dokter</th>
@@ -122,7 +126,7 @@
 
                     @forelse ($antrian as $item)
 
-                        <tr class="border-t">
+                        <tr class="border-t hover:bg-gray-50">
                             <td class="px-4 py-2 border">
                                 {{ $item->nomor_antrian }}
                             </td>
@@ -136,7 +140,10 @@
                             </td>
 
                             <td class="px-4 py-2 border">
-                                {{ ucfirst($item->status) }}
+                                <span class="px-2 py-1 rounded text-xs 
+                                    {{ $item->status == 'menunggu' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800' }}">
+                                    {{ ucfirst($item->status) }}
+                                </span>
                             </td>
                         </tr>
 

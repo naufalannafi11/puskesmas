@@ -14,6 +14,7 @@ use App\Http\Controllers\Pasien\PasienDashboardController;
 use App\Http\Controllers\Dokter\PemeriksaanController;
 use App\Http\Controllers\Pasien\RiwayatController;
 use App\Models\Obat;
+use App\Http\Controllers\Admin\PrediksiController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -52,6 +53,9 @@ Route::middleware(['auth','role:admin'])
 
        Route::get('/', [DashboardController::class, 'index'])
             ->name('dashboard');
+        Route::get('/dataset/import', function () {
+    return view('admin.dataset.import');
+});
 
         Route::resource('/dokter', DokterController::class);
         Route::resource('/pasien', PasienController::class);
@@ -65,6 +69,12 @@ Route::middleware(['auth','role:admin'])
 
         Route::get('/pembayaran/{id}', [PembayaranController::class, 'show'])
             ->name('pembayaran.show');
+        
+        Route::get('/prediksi', [PrediksiController::class, 'index'])
+    ->name('prediksi.index');
+
+Route::post('/prediksi', [PrediksiController::class, 'predict'])
+    ->name('prediksi.proses');
 
 });
 
