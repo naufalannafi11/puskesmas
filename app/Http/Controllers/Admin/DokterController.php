@@ -47,7 +47,7 @@ class DokterController extends Controller
         ]);
         $dokter->update($request->only('name','email'));
 
-        return redirect()->route(admin.dokter.index)
+        return redirect()->route('admin.dokter.index')
         ->with('success', 'Data Dokter Berhasil Diupdate');
     }
 

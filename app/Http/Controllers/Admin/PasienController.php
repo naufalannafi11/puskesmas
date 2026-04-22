@@ -34,13 +34,13 @@ class PasienController extends Controller
         'password' => 'required|min:6',
     ]);
 
-    $lastRM = User::whereNotNull('no_rm')
-        ->orderBy('no_rm', 'desc')
-        ->value('no_rm');
+    $lastUser = User::whereNotNull('no_rm')
+        ->orderByRaw('CAST(no_rm AS UNSIGNED) DESC')
+        ->first();
 
-    $newRM = $lastRM
-        ? str_pad(((int)$lastRM) + 1, 6, '0', STR_PAD_LEFT)
-        : '000001';
+    $maxRM = $lastUser ? (int)$lastUser->no_rm : 0;
+
+    $newRM = str_pad($maxRM + 1, 6, '0', STR_PAD_LEFT);
 
     User::create([
         'name' => $request->name,

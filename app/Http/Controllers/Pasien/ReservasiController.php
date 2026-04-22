@@ -35,24 +35,56 @@ class ReservasiController extends Controller
             'keluhan'   => 'required'
         ]);
 
-        // Ambil nomor antrian terakhir untuk dokter + tanggal tertentu
-        $lastAntrian = Reservasi::where('tanggal', $request->tanggal)
-            ->whereHas('dokter', function ($q) use ($request){
-                $q->where('poli', $request->poli);
-            })
-            ->max('nomor_antrian');
+        // 🕒 OVERTIME PROTECTION: Cek apakah waktu dokter masih cukup (5 menit/pasien)
+        $hariInggris = \Carbon\Carbon::parse($request->tanggal)->format('l');
+        $hariIndo = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ][$hariInggris];
+
+        $jadwal = \App\Models\JadwalDokter::where('dokter_id', $request->dokter_id)
+            ->where('hari', $hariIndo)
+            ->first();
+
+        if ($jadwal) {
+            $antreanAktif = Reservasi::where('dokter_id', $request->dokter_id)
+                ->where('tanggal', $request->tanggal)
+                ->whereIn('status', ['menunggu', 'dipanggil'])
+                ->count();
+
+            $estimasiMenit = ($antreanAktif + 1) * 5;
+            $jamSelesai = \Carbon\Carbon::parse($request->tanggal . ' ' . $jadwal->jam_selesai);
+            
+            // Jika pendaftaran hari ini, hitung dari waktu sekarang
+            $startTime = \Carbon\Carbon::parse($request->tanggal)->isToday() 
+                ? now() 
+                : \Carbon\Carbon::parse($request->tanggal . ' ' . $jadwal->jam_mulai);
+
+            if ($startTime->addMinutes($estimasiMenit)->gt($jamSelesai)) {
+                return back()->withInput()->with('error', 'Mohon maaf, kuota pelayanan Dokter hari ini sudah penuh berdasarkan estimasi jam operasional. Silakan pilih tanggal praktik berikutnya.');
+            }
+        }
+
+        // Ambil data dokter untuk tahu poli-nya
+        $targetDokter = User::findOrFail($request->dokter_id);
+
+        // Ambil nomor antrian terakhir untuk POLI yang sama + tanggal tertentu
+        $lastAntrian = Reservasi::join('users', 'reservasis.dokter_id', '=', 'users.id')
+            ->where('reservasis.tanggal', $request->tanggal)
+            ->where('users.poli', $targetDokter->poli)
+            ->max('reservasis.nomor_antrian');
 
         $nomorAntrian = $lastAntrian ? $lastAntrian + 1 : 1;
 
         // Simpan reservasi
         Reservasi::create([
-    'pasien_id' => Auth::id(),
-    'dokter_id' => $request->dokter_id,
-    'tanggal'   => $request->tanggal,
-    'keluhan'   => $request->keluhan,
-    'nomor_antrian' => $nomorAntrian,
-    'status' => 'menunggu'
-]);
+            'pasien_id' => Auth::id(),
+            'dokter_id' => $request->dokter_id,
+            'tanggal'   => $request->tanggal,
+            'keluhan'   => $request->keluhan,
+            'nomor_antrian' => $nomorAntrian,
+            'status' => 'menunggu'
+        ]);
 
         return redirect()->route('pasien.reservasi.index')
             ->with('success', 'Reservasi berhasil dibuat. Nomor antrian: ' . $nomorAntrian);

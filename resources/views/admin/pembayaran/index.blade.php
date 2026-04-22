@@ -1,49 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="space-y-6">
+    {{-- HEADER --}}
+    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div>
+            <h2 class="text-2xl font-black text-gray-800 tracking-tight">Pembayaran Pelayanan</h2>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Manajemen Transaksi & Biaya Pasien</p>
+        </div>
+    </div>
 
-<h1 class="text-2xl font-bold mb-6">Pembayaran Pasien</h1>
-
-<table class="w-full bg-white rounded shadow">
-    <thead class="bg-gray-100">
-        <tr>
-            <th class="p-3">Pasien</th>
-            <th class="p-3">Dokter</th>
-            <th class="p-3">Tanggal</th>
-            <th class="p-3">Total Bayar</th>
-            <th class="p-3">Aksi</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($data as $rm)
-        <tr class="border-t">
-            <td class="p-3">{{ $rm->pasien->name }}</td>
-            <td class="p-3">{{ $rm->dokter->name }}</td>
-            <td class="p-3">{{ $rm->tanggal }}</td>
-            <td class="p-3">
-                Rp {{ number_format($rm->total_bayar,0,',','.') }}
-            </td>
-            <td class="p-3 text-center">
-
-@if($rm->status == 'belum_bayar')
-
-<a href="{{ route('admin.pembayaran.show',$rm->id) }}"
-   class="bg-green-500 text-white px-3 py-1 rounded">
-   Bayar
-</a>
-
-@else
-
-<span class="bg-gray-400 text-white px-3 py-1 rounded">
-   Sudah Bayar
-</span>
-
-@endif
-
-</td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
-
+    {{-- TABLE --}}
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50/50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                <tr>
+                    <th class="px-6 py-4">Informasi Pasien</th>
+                    <th class="px-6 py-4">Dokter Pemeriksa</th>
+                    <th class="px-6 py-4">Tanggal Transaksi</th>
+                    <th class="px-6 py-4">Total Tagihan</th>
+                    <th class="px-6 py-4 text-center">Status / Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                @foreach($data as $rm)
+                <tr class="hover:bg-gray-50/50 transition">
+                    <td class="px-6 py-4">
+                        <p class="font-bold text-gray-700">{{ $rm->pasien->name }}</p>
+                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{{ $rm->pasien->no_rm }}</p>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 font-medium italic">{{ $rm->dokter->name }}</td>
+                    <td class="px-6 py-4 text-gray-400 text-xs">{{ $rm->tanggal }}</td>
+                    <td class="px-6 py-4">
+                        <span class="text-emerald-600 font-black tracking-tight">
+                            Rp {{ number_format($rm->total_bayar,0,',','.') }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex justify-center">
+                            @if($rm->status == 'belum_bayar')
+                                <a href="{{ route('admin.pembayaran.show',$rm->id) }}"
+                                   class="px-5 py-1.5 bg-green-50 text-green-600 border border-green-100 rounded-lg text-[10px] font-bold hover:bg-green-100 transition shadow-sm uppercase tracking-widest">
+                                   Bayar Sekarang
+                                </a>
+                            @else
+                                <span class="px-5 py-1.5 bg-gray-50 text-gray-400 border border-gray-100 rounded-lg text-[10px] font-bold uppercase tracking-widest cursor-not-allowed">
+                                   Lunas Paid
+                                </span>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
 @endsection

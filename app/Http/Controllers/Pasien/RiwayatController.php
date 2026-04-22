@@ -25,7 +25,7 @@ class RiwayatController extends Controller
     {
         $rekam_medis = auth()->user()
             ->rekamMedis()
-            ->with('dokter')
+            ->with(['dokter', 'obats'])
             ->findOrFail($id);
 
         return view('pasien.riwayat.show', compact('rekam_medis'));

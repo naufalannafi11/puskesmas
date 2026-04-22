@@ -12,4 +12,11 @@ class Obat extends Model
         'stok',
         'harga'
     ];
+
+    public function rekamMedis()
+    {
+        return $this->belongsToMany(RekamMedis::class, 'rekam_medis_obat')
+                    ->withPivot('jumlah')
+                    ->withTimestamps();
+    }
 }

@@ -12,7 +12,7 @@ class RekamMedis extends Model
     use HasFactory;
 
     protected $fillable = [
-        'reservasi_id',   // TAMBAHKAN INI
+        'reservasi_id',
         'pasien_id',
         'dokter_id',
         'tanggal',
@@ -23,7 +23,10 @@ class RekamMedis extends Model
         'tindakan',
         'pengobatan',
         'rujukan',
-        'rencana_tindak_lanjut'
+        'rencana_tindak_lanjut',
+        'pemeriksaan_lab',
+        'status',
+        'total_bayar',
     ];
 
     public function pasien()
@@ -39,5 +42,17 @@ class RekamMedis extends Model
     public function reservasi()
     {
         return $this->belongsTo(Reservasi::class);
+    }
+
+    public function obats()
+    {
+        return $this->belongsToMany(Obat::class, 'rekam_medis_obat')
+                    ->withPivot('jumlah')
+                    ->withTimestamps();
+    }
+
+    public function penyakit()
+    {
+        return $this->belongsTo(Penyakit::class, 'kode_icd', 'kode_icd');
     }
 }

@@ -23,7 +23,7 @@
     <tbody>
         @forelse($reservasis as $r)
         <tr class="border-t">
-            <td class="p-3">{{ $r->nomor_antrian }}</td>
+            <td class="p-3 font-bold text-gray-800">{{ $r->nomor_antrian_format }}</td>
             <td class="p-3">{{ $r->tanggal }}</td>
             <td class="p-3">{{ $r->dokter->name }}</td>
             <td class="p-3">{{ $r->keluhan }}</td>

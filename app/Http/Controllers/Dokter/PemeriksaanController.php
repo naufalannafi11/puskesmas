@@ -14,16 +14,54 @@ class PemeriksaanController extends Controller
      * Menampilkan daftar pasien hari ini yang statusnya menunggu
      */
     public function index()
-{
-    $reservasis = Reservasi::where('dokter_id', Auth::id())
-        ->where('status', 'menunggu')
-        ->whereDate('tanggal', today())
-        ->with('pasien')
-        ->orderBy('nomor_antrian', 'asc')
-        ->get();
+    {
+        // 🕒 AUTOMATION: Pindahkan pasien yang "lewat" (3 menit tidak muncul) ke akhir antrian
+        $timedOutPatients = Reservasi::where('dokter_id', Auth::id())
+            ->where('status', 'menunggu')
+            ->whereDate('tanggal', today())
+            ->whereNotNull('called_at')
+            ->where('called_at', '<', now()->subMinutes(3))
+            ->get();
 
-    return view('dokter.pemeriksaan.index', compact('reservasis'));
-}
+        foreach ($timedOutPatients as $patient) {
+            // Ambil nomor tertinggi di POLI yang sama (bukan cuma dokter ini)
+            $maxAntrian = Reservasi::join('users', 'reservasis.dokter_id', '=', 'users.id')
+                ->whereDate('reservasis.tanggal', today())
+                ->where('users.poli', Auth::user()->poli)
+                ->max('reservasis.nomor_antrian');
+
+            $patient->update([
+                'nomor_antrian' => $maxAntrian + 1,
+                'called_at'     => null // Reset waktu panggil
+            ]);
+        }
+
+        $reservasis = Reservasi::where('dokter_id', Auth::id())
+            ->where('status', 'menunggu')
+            ->whereDate('tanggal', today())
+            ->with('pasien')
+            ->orderBy('nomor_antrian', 'asc')
+            ->get();
+
+        return view('dokter.pemeriksaan.index', compact('reservasis'));
+    }
+
+    /**
+     * Memanggil pasien (Mulai timer 3 menit)
+     */
+    public function panggil(Reservasi $reservasi)
+    {
+        // 🔒 Keamanan
+        if ($reservasi->dokter_id != Auth::id()) {
+            abort(403);
+        }
+
+        $reservasi->update([
+            'called_at' => now()
+        ]);
+
+        return back()->with('success', 'Pasien nomor ' . $reservasi->nomor_antrian . ' berhasil dipanggil. Batas tunggu 3 menit dimulai.');
+    }
 
     /**
      * Form pemeriksaan
@@ -35,7 +73,9 @@ class PemeriksaanController extends Controller
             abort(403, 'Akses ditolak');
         }
 
-        return view('dokter.pemeriksaan.create', compact('reservasi'));
+        $obats = \App\Models\Obat::orderBy('nama_obat')->get();
+        $penyakits = \App\Models\Penyakit::orderBy('nama_penyakit')->get();
+        return view('dokter.pemeriksaan.create', compact('reservasi', 'obats', 'penyakits'));
     }
 
     /**
@@ -60,30 +100,55 @@ class PemeriksaanController extends Controller
             'pemeriksaan_lab' => 'nullable|string',
         ]);
 
-        RekamMedis::create([
-            'reservasi_id' => $reservasi->id,
-            'pasien_id'    => $reservasi->pasien_id,
-            'dokter_id'    => Auth::id(),
-            'tanggal'      => now(),
-            'anamnesis'    => $request->anamnesis,
-            'pemeriksaan'  => $request->pemeriksaan,
-            'diagnosis'    => $request->diagnosis,
-            'kode_icd'     => $request->kode_icd,
-            'tindakan'     => $request->tindakan,
-            'pengobatan'   => $request->pengobatan,
-            'rujukan'      => $request->rujukan,
-            'rencana_tindak_lanjut' => $request->rencana_tindak_lanjut,
-            'pemeriksaan_lab' => $request->pemeriksaan_lab,
-        ]);
+        \DB::beginTransaction();
 
-        // Update status reservasi
-        $reservasi->update([
-            'status' => 'selesai'
-        ]);
+        try {
+            $rekamMedis = RekamMedis::create([
+                'reservasi_id' => $reservasi->id,
+                'pasien_id'    => $reservasi->pasien_id,
+                'dokter_id'    => Auth::id(),
+                'tanggal'      => now(),
+                'anamnesis'    => $request->anamnesis,
+                'pemeriksaan'  => $request->pemeriksaan,
+                'diagnosis'    => $request->diagnosis,
+                'kode_icd'     => $request->kode_icd,
+                'tindakan'     => $request->tindakan,
+                'pengobatan'   => 'Resep Terstruktur (Lihat Detail)',
+                'rujukan'      => $request->rujukan,
+                'rencana_tindak_lanjut' => $request->rencana_tindak_lanjut,
+                'pemeriksaan_lab' => $request->pemeriksaan_lab,
+            ]);
 
-        return redirect()
-            ->route('dokter.pemeriksaan.index')
-            ->with('success', 'Pemeriksaan berhasil disimpan');
+            // SIMPAN OBAT & KURANGI STOK
+            if ($request->has('obat_ids')) {
+                foreach ($request->obat_ids as $index => $obatId) {
+                    if (!$obatId) continue;
+                    
+                    $jumlah = $request->jumlahs[$index] ?? 1;
+                    $obat = \App\Models\Obat::findOrFail($obatId);
+
+                    if ($obat->stok < $jumlah) {
+                        throw new \Exception("Stok obat {$obat->nama_obat} tidak mencukupi (Sisa: {$obat->stok})");
+                    }
+
+                    $rekamMedis->obats()->attach($obatId, ['jumlah' => $jumlah]);
+                    $obat->decrement('stok', $jumlah);
+                }
+            }
+
+            // Update status reservasi
+            $reservasi->update(['status' => 'selesai']);
+
+            \DB::commit();
+
+            return redirect()
+                ->route('dokter.pemeriksaan.index')
+                ->with('success', 'Pemeriksaan berhasil disimpan dan stok obat dikurangi.');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return back()->withInput()->with('error', 'Gagal menyimpan pemeriksaan: ' . $e->getMessage());
+        }
     }
 
     public function riwayat()

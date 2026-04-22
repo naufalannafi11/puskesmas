@@ -58,4 +58,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reservasi::class, 'pasien_id');
     }
+
+    public function jadwalDokter()
+    {
+        return $this->hasMany(JadwalDokter::class, 'dokter_id');
+    }
 }

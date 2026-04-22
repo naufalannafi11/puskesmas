@@ -36,8 +36,9 @@ class RekamMedisController extends Controller
     {
         $pasiens = User::where('role', 'pasien')->get();
         $dokters = User::where('role', 'dokter')->get();
+        $obats   = \App\Models\Obat::orderBy('nama_obat')->get();
 
-        return view('admin.rekam_medis.create', compact('pasiens','dokters'));
+        return view('admin.rekam_medis.create', compact('pasiens','dokters','obats'));
     }
 
     /**
@@ -51,20 +52,50 @@ class RekamMedisController extends Controller
             'tanggal'   => 'required|date',
         ]);
 
-        RekamMedis::create([
-            'pasien_id'   => $request->pasien_id,
-            'dokter_id'   => $request->dokter_id,
-            'tanggal'     => $request->tanggal,
-            'anamnesis'   => $request->anamnesis,
-            'pemeriksaan' => $request->pemeriksaan,
-            'diagnosis'   => $request->diagnosis,
-            'icd10'       => $request->icd10,
-            'tindakan'    => $request->tindakan,
-            'pengobatan'  => $request->pengobatan,
-        ]);
+        \DB::beginTransaction();
 
-        return redirect()->route('admin.rekam-medis.index')
-            ->with('success', 'Rekam medis berhasil ditambahkan');
+        try {
+            $rekamMedis = RekamMedis::create([
+                'pasien_id'   => $request->pasien_id,
+                'dokter_id'   => $request->dokter_id,
+                'tanggal'     => $request->tanggal,
+                'anamnesis'   => $request->anamnesis,
+                'pemeriksaan' => $request->pemeriksaan,
+                'diagnosis'   => $request->diagnosis,
+                'kode_icd'    => $request->kode_icd,
+                'tindakan'    => $request->tindakan,
+                'pengobatan'  => 'Resep Terstruktur (Lihat Detail)',
+            ]);
+
+            // Simpan Obat & Kurangi Stok
+            if ($request->has('obat_ids')) {
+                foreach ($request->obat_ids as $index => $obatId) {
+                    if (!$obatId) continue;
+                    
+                    $jumlah = $request->jumlahs[$index] ?? 1;
+                    $obat = \App\Models\Obat::findOrFail($obatId);
+
+                    if ($obat->stok < $jumlah) {
+                        throw new \Exception("Stok obat {$obat->nama_obat} tidak mencukupi (Sisa: {$obat->stok})");
+                    }
+
+                    // Hubungkan ke Pivot
+                    $rekamMedis->obats()->attach($obatId, ['jumlah' => $jumlah]);
+
+                    // Kurangi Stok Rill
+                    $obat->decrement('stok', $jumlah);
+                }
+            }
+
+            \DB::commit();
+
+            return redirect()->route('admin.rekam_medis.index')
+                ->with('success', 'Rekam medis berhasil ditambahkan dan stok obat dikurangi.');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return back()->withInput()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -85,7 +116,7 @@ class RekamMedisController extends Controller
     {
         $rekamMedi->update($request->all());
 
-        return redirect()->route('admin.rekam-medis.index')
+        return redirect()->route('admin.rekam_medis.index')
             ->with('success', 'Rekam medis diperbarui');
     }
 
@@ -94,9 +125,24 @@ class RekamMedisController extends Controller
      */
     public function destroy(RekamMedis $rekamMedi)
     {
-        $rekamMedi->delete();
+        \DB::beginTransaction();
 
-        return back()->with('success', 'Rekam medis dihapus');
+        try {
+            // Kembalikan Stok (Restitusi)
+            foreach ($rekamMedi->obats as $obat) {
+                $jumlah = $obat->pivot->jumlah;
+                $obat->increment('stok', $jumlah);
+            }
+
+            $rekamMedi->delete();
+
+            \DB::commit();
+            return back()->with('success', 'Rekam medis dihapus dan stok obat dikembalikan.');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
+        }
     }
 
     public function show($id)

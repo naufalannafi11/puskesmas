@@ -17,7 +17,8 @@ class Reservasi extends Model
         'tanggal',
         'keluhan',
         'nomor_antrian',
-        'status'
+        'status',
+        'called_at'
     ];
 
     public function pasien()
@@ -33,5 +34,22 @@ class Reservasi extends Model
     public function rekamMedis()
     {
         return $this->hasOne(RekamMedis::class);
+    }
+
+    /**
+     * Formatting queue number with Poli Prefix
+     * Umum (A), Gigi (B), KIA (C), KB (D), Imunisasi (E)
+     */
+    public function getNomorAntrianFormatAttribute()
+    {
+        $prefix = [
+            'Umum'      => 'A',
+            'Gigi'      => 'B',
+            'KIA'       => 'C',
+            'KB'        => 'D',
+            'Imunisasi' => 'E'
+        ][$this->dokter->poli] ?? 'X';
+
+        return $prefix . '-' . $this->nomor_antrian;
     }
 }
